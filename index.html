@@ -7,7 +7,79 @@
 <link rel="manifest" href="manifest.json">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js">
+async function aiReplyAsync(prompt) {
+  const msgs = document.getElementById('msgs');
+  const bubble = document.createElement('div');
+  bubble.className = 'msg ai';
+  bubble.innerHTML = '<span class="typing">…</span>';
+  msgs.appendChild(bubble);
+  bubble.scrollIntoView({behavior:'smooth', block:'end'});
+
+  let full = '';
+  let queue = [];
+  let typing = false;
+
+  function renderMarkdown(t) {
+    let s = t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    s = s.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+    s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
+    s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
+    s = s.replace(/`([^`\n]+)`/g, '<code style="background:#333;padding:2px 4px;border-radius:4px;">$1</code>');
+    s = s.replace(/\n/g, '<br>');
+    return s;
+  }
+
+  function render() {
+    bubble.innerHTML = renderMarkdown(full) + '<span class="cursor">▍</span>';
+    msgs.scrollTop = msgs.scrollHeight;
+  }
+
+  function typeLoop() {
+    if (queue.length === 0) { typing = false; bubble.innerHTML = renderMarkdown(full); return; }
+    typing = true;
+    const ch = queue.shift();
+    full += ch;
+    render();
+    setTimeout(typeLoop, ch === '\n' ? 0 : 12);
+  }
+
+  try {
+    const res = await fetch("https://orivex-proxy.j09854608.workers.dev/", {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({ prompt: prompt })
+    });
+    if (!res.ok || !res.body) throw new Error('HTTP ' + res.status);
+    
+    const reader = res.body.getReader();
+    const decoder = new TextDecoder();
+    let buf = '';
+    
+    while (true) {
+      const {value, done} = await reader.read();
+      if (done) break;
+      buf += decoder.decode(value, {stream: true});
+      let idx;
+      while ((idx = buf.indexOf('\n')) >= 0) {
+        const line = buf.slice(0, idx).trim();
+        buf = buf.slice(idx + 1);
+        if (!line.startsWith('data:')) continue;
+        const payload = line.slice(5).trim();
+        if (!payload || payload === '[DONE]') continue;
+        try {
+          const json = JSON.parse(payload);
+          const txt = json?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
+          if (txt) { queue.push(...txt.split('')); if (!typing) typeLoop(); }
+        } catch(e) {}
+      }
+    }
+  } catch (err) {
+    full += '\n[Ошибка: ' + err.message + ']';
+    bubble.innerHTML = renderMarkdown(full);
+  }
+}
+</script>
 <style>
 /* ===== Переменные темы ===== */
 :root{--bg:#0b1312;--pn:#111c1a;--p2:#182825;--ac:#6BC9B5;--gd:#F2C14E;--tx:#dfeeea;--mt:#86a19a;--bd:#223632}
@@ -235,6 +307,11 @@ tr.me{background:#6bc9b522;color:var(--ac);font-weight:700}
 .mg span a:hover{ color:#6BC9B5 !important; }
 .mg span{ white-space:pre-wrap; word-wrap:break-word; }
 /* ===== /CodeMate Stream Smooth ===== */
+
+.msg.ai .cursor { display:inline-block; animation: blink 1s steps(1) infinite; color:#888; }
+@keyframes blink { 50% { opacity:0; } }
+.msg.ai .typing { color:#888; }
+
 </style>
 
 <style id="codemate-final-settings-style">
@@ -749,100 +826,7 @@ const CM_CHAT_SYSTEM = "Ты — CodeMate, умный и дружелюбный 
  "Можешь использовать markdown (код в ```).";
 
 /* ===== CodeMate Stream Smooth ===== */
-async function aiReplyAsync(userText){
- let history = [];
- try {
-  const ch = chatId ? S.chats.find(c=>c.id===chatId) : null;
-  if(ch && Array.isArray(ch.m)){
-   history = ch.m.slice(-10).map(msg=>({
-    role: msg.r==='u' ? 'user' : 'model',
-    parts: [{ text: msg.x }]
-   }));
-  }
- } catch(_){}
 
- history.push({ role: 'user', parts: [{ text: userText }] });
-
- const body = { history, system: CM_CHAT_SYSTEM, model: 'gemini-3.5-flash' };
-
- const resp = await fetch(CM_WORKER_URL, {
-  method: 'POST',
-  headers: { 'Content-Type': 'application/json' },
-  body: JSON.stringify(body)
- });
-
- if(!resp.ok){
-  const errText = await resp.text();
-  throw new Error('Worker '+resp.status+': '+errText.substring(0,200));
- }
-
- const ch = S.chats.find(c=>c.id===chatId);
- if(!ch) return '';
-
- ch.m.push({ r: 'a', x: '' });
- const msgIndex = ch.m.length - 1;
- save();
- if(cur==='chat' && chatId===ch.id) renderChat();
-
- const reader = resp.body.getReader();
- const decoder = new TextDecoder();
- let fullText = '';
- let buffer = '';
-
- // Плавное обновление: обновляем DOM через requestAnimationFrame
- let rafPending = false;
- const updateUI = () => {
-  if(rafPending) return;
-  rafPending = true;
-  requestAnimationFrame(()=>{
-   rafPending = false;
-   if(cur==='chat' && chatId===ch.id){
-    const msgsEl = document.getElementById('msgs');
-    if(msgsEl){
-     const last = msgsEl.lastElementChild;
-     if(last){
-      let html = fullText.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;');
-      html = html.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener">$1</a>');
-      html = html.replace(/\n/g, '<br>');
-      last.innerHTML = html;
-      const msgs = document.getElementById('msgs');
-      if(msgs) msgs.scrollTop = msgs.scrollHeight;
-     }
-    }
-   }
-  });
- };
-
- while(true){
-  const { done, value } = await reader.read();
-  if(done) break;
-  buffer += decoder.decode(value, { stream: true });
-  const lines = buffer.split('\n');
-  buffer = lines.pop() || '';
-  let changed = false;
-  for(const line of lines){
-   if(line.startsWith('data: ')){
-    const dataStr = line.slice(6).trim();
-    if(dataStr === '[DONE]') continue;
-    try{
-     const data = JSON.parse(dataStr);
-     const text = data?.candidates?.[0]?.content?.parts?.[0]?.text;
-     if(text){ fullText += text; changed = true; }
-    }catch(_){}
-   }
-  }
-  if(changed){
-   ch.m[msgIndex].x = fullText;
-   updateUI();
-  }
- }
-
- if(!fullText) throw new Error('Пустой ответ');
- ch.m[msgIndex].x = fullText;
- save();
- if(cur==='chat' && chatId===ch.id) renderChat();
- return fullText;
-}
 
 
 const aiReply=q=>{const k=KB.find(r=>r[0].test(q));return k?k[1]:'Хороший вопрос! Попробуй пройти уроки — там я объясняю на практике.';};
