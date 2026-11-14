@@ -6,10 +6,18 @@ export default async function handler(req) {
   }
 
   try {
-    const { messages } = await req.json();
-    const prompt = messages[messages.length - 1].content;
+    const body = await req.json();
+    
+    // Универсальный прием: понимаем и старый формат {prompt}, и новый {messages}
+    let promptText = "";
+    if (body.prompt) {
+      promptText = body.prompt;
+    } else if (body.messages && body.messages.length > 0) {
+      promptText = body.messages[body.messages.length - 1].content;
+    } else {
+      throw new Error("No prompt provided");
+    }
 
-    // Берем ключ из настроек Vercel
     const apiKey = process.env.GOOGLE_GENERATIVE_AI_API_KEY;
     if (!apiKey) throw new Error("API key missing");
 
@@ -19,14 +27,14 @@ export default async function handler(req) {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          contents: [{ role: 'user', parts: [{ text: prompt }] }]
+          contents: [{ role: 'user', parts: [{ text: promptText }] }]
         })
       }
     );
 
-    if (!response.ok) throw new Error("Gemini API error");
+    if (!response.ok) throw new Error("Gemini API error: " + response.status);
 
-    // Прокидываем поток (SSE) обратно в браузер
+    // Отдаем поток обратно в браузер
     return new Response(response.body, {
       headers: {
         'Content-Type': 'text/event-stream',
