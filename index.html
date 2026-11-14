@@ -45,7 +45,7 @@ async function aiReplyAsync(prompt) {
   }
 
   try {
-    const res = await fetch("https://orivex-proxy.j09854608.workers.dev/", {
+    const res = await fetch("/api/chat", {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ prompt: prompt })
