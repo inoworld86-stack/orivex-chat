@@ -8,49 +8,57 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js">
+
 async function aiReplyAsync(prompt) {
   const msgs = document.getElementById('msgs');
   const bubble = document.createElement('div');
   bubble.className = 'msg ai';
-  bubble.innerHTML = '<span class="typing">…</span>';
+  bubble.innerHTML = '<span class="typing" style="color:#888;">…</span>';
   msgs.appendChild(bubble);
   bubble.scrollIntoView({behavior:'smooth', block:'end'});
 
   let full = '';
   let queue = [];
-  let typing = false;
+  let isTyping = false;
 
   function renderMarkdown(t) {
     let s = t.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
-    s = s.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer">$1</a>');
+    s = s.replace(/(https?:\/\/[^\s<]+)/g, '<a href="$1" target="_blank" rel="noopener noreferrer" style="color:#4da6ff;">$1</a>');
     s = s.replace(/\*\*(.+?)\*\*/g, '<strong>$1</strong>');
     s = s.replace(/\*(.+?)\*/g, '<em>$1</em>');
-    s = s.replace(/`([^`\n]+)`/g, '<code style="background:#333;padding:2px 4px;border-radius:4px;">$1</code>');
+    s = s.replace(/`([^`\n]+)`/g, '<code style="background:#333;padding:2px 4px;border-radius:4px;font-family:monospace;">$1</code>');
     s = s.replace(/\n/g, '<br>');
     return s;
   }
 
   function render() {
-    bubble.innerHTML = renderMarkdown(full) + '<span class="cursor">▍</span>';
+    bubble.innerHTML = renderMarkdown(full) + '<span class="cursor" style="display:inline-block;width:8px;height:15px;background:#888;animation:blink 1s step-end infinite;vertical-align:middle;margin-left:2px;"></span>';
     msgs.scrollTop = msgs.scrollHeight;
   }
 
-  function typeLoop() {
-    if (queue.length === 0) { typing = false; bubble.innerHTML = renderMarkdown(full); return; }
-    typing = true;
-    const ch = queue.shift();
-    full += ch;
+  function typeNextFrame() {
+    if (queue.length === 0) { 
+      isTyping = false; 
+      bubble.innerHTML = renderMarkdown(full); 
+      return; 
+    }
+    isTyping = true;
+    // Берем 2 символа за кадр (около 120 симв/сек) для идеальной плавности
+    const chunk = queue.splice(0, 2).join('');
+    full += chunk;
     render();
-    setTimeout(typeLoop, ch === '\n' ? 0 : 12);
+    requestAnimationFrame(typeNextFrame);
   }
 
   try {
+    // Стучимся в наш Vercel API
     const res = await fetch("/api/chat", {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
       body: JSON.stringify({ prompt: prompt })
     });
-    if (!res.ok || !res.body) throw new Error('HTTP ' + res.status);
+    
+    if (!res.ok || !res.body) throw new Error('Сервер вернул ' + res.status);
     
     const reader = res.body.getReader();
     const decoder = new TextDecoder();
@@ -68,9 +76,13 @@ async function aiReplyAsync(prompt) {
         const payload = line.slice(5).trim();
         if (!payload || payload === '[DONE]') continue;
         try {
+          // AI SDK v3+ шлет текст в поле content или text
           const json = JSON.parse(payload);
-          const txt = json?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
-          if (txt) { queue.push(...txt.split('')); if (!typing) typeLoop(); }
+          const txt = json.content || json.text || '';
+          if (txt) { 
+            queue.push(...txt.split('')); 
+            if (!isTyping) requestAnimationFrame(typeNextFrame); 
+          }
         } catch(e) {}
       }
     }
