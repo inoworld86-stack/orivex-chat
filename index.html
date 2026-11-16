@@ -9,6 +9,7 @@
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js">
 
+
 async function aiReplyAsync(prompt) {
   const msgs = document.getElementById('msgs');
   const bubble = document.createElement('div');
@@ -43,19 +44,22 @@ async function aiReplyAsync(prompt) {
       return; 
     }
     isTyping = true;
-    // Берем 2 символа за кадр (около 120 симв/сек) для идеальной плавности
-    const chunk = queue.splice(0, 2).join('');
+    const chunk = queue.splice(0, 2).join(''); // 2 символа за кадр для идеальной плавности
     full += chunk;
     render();
     requestAnimationFrame(typeNextFrame);
   }
 
   try {
-    // Стучимся в наш Vercel API
-    const res = await fetch("/api/chat", {
+    // НОВЫЙ БЫСТРЫЙ VERCEL ПРОКСИ
+    const API_URL = "https://vercel-gemini-proxy-rouge.vercel.app/api/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse"; 
+    
+    const res = await fetch(API_URL, {
       method: 'POST',
       headers: {'Content-Type': 'application/json'},
-      body: JSON.stringify({ prompt: prompt })
+      body: JSON.stringify({ 
+        contents: [{ role: 'user', parts: [{ text: prompt }] }] 
+      })
     });
     
     if (!res.ok || !res.body) throw new Error('Сервер вернул ' + res.status);
@@ -76,9 +80,8 @@ async function aiReplyAsync(prompt) {
         const payload = line.slice(5).trim();
         if (!payload || payload === '[DONE]') continue;
         try {
-          // AI SDK v3+ шлет текст в поле content или text
           const json = JSON.parse(payload);
-          const txt = json.content || json.text || '';
+          const txt = json?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
           if (txt) { 
             queue.push(...txt.split('')); 
             if (!isTyping) requestAnimationFrame(typeNextFrame); 
