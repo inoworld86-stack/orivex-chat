@@ -53,9 +53,9 @@ async function aiReplyAsync(prompt) {
 
   try {
     // ⚠️ ЗАМЕНИ КЛЮЧ НИЖЕ НА СВОЙ НОВЫЙ (начинается на AQ...)
-    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse"; 
+    const API_URL = "https://generativelanguage.googleapis.com/v1beta/interactions"; 
     
-    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:streamGenerateContent?alt=sse";
+    const API_URL = "https://generativelanguage.googleapis.com/v1beta/interactions";
     
     const res = await fetch(API_URL, {
       method: 'POST',
@@ -63,9 +63,7 @@ async function aiReplyAsync(prompt) {
         'Content-Type': 'application/json',
         
       },
-      body: JSON.stringify({ 
-        contents: [{ role: 'user', parts: [{ text: prompt }] }] 
-      })
+      body: JSON.stringify({ model: "gemini-3.8-flash", input: prompt })
     });
     
     if (!res.ok || !res.body) throw new Error('Сервер вернул ' + res.status);
