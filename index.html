@@ -10,6 +10,7 @@
 <script src="https://cdnjs.cloudflare.com/ajax/libs/highlight.js/11.9.0/highlight.min.js">
 
 
+
 async function aiReplyAsync(prompt) {
   const msgs = document.getElementById('msgs');
   const bubble = document.createElement('div');
@@ -44,19 +45,24 @@ async function aiReplyAsync(prompt) {
       return; 
     }
     isTyping = true;
-    const chunk = queue.splice(0, 2).join(''); // 2 символа за кадр для идеальной плавности
+    const chunk = queue.splice(0, 2).join(''); 
     full += chunk;
     render();
     requestAnimationFrame(typeNextFrame);
   }
 
   try {
-    // НОВЫЙ БЫСТРЫЙ VERCEL ПРОКСИ
+    // ⚠️ ЗАМЕНИ КЛЮЧ НИЖЕ НА СВОЙ НОВЫЙ (начинается на AQ...)
     const API_URL = "https://vercel-gemini-proxy-rouge.vercel.app/api/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse"; 
+    
+    const API_URL = "https://vercel-gemini-proxy-rouge.vercel.app/api/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse";
     
     const res = await fetch(API_URL, {
       method: 'POST',
-      headers: {'Content-Type': 'application/json'},
+      headers: {
+        'Content-Type': 'application/json',
+        
+      },
       body: JSON.stringify({ 
         contents: [{ role: 'user', parts: [{ text: prompt }] }] 
       })
