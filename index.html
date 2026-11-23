@@ -11,6 +11,7 @@
 
 
 
+
 async function aiReplyAsync(prompt) {
   const msgs = document.getElementById('msgs');
   const bubble = document.createElement('div');
@@ -52,19 +53,21 @@ async function aiReplyAsync(prompt) {
   }
 
   try {
-    // ⚠️ ЗАМЕНИ КЛЮЧ НИЖЕ НА СВОЙ НОВЫЙ (начинается на ..)
-    const GEMINI_KEY = ""; 
-    
-    const API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:streamGenerateContent?alt=sse";
-    
+    // Твой ключ OpenRouter и модель
+    const API_KEY = atob("c2stb3ItdjEtNmY2ZDUxNzdhY2YxYWIwMmE2NmY1ODY1M2QzMjRmZDUxZWVjZjNlMzJhNzFkN2Y2NmNjZmUxOTg0OTgyYjc1MA==");
+    const MODEL = "openrouter/free";
+    const API_URL = "https://openrouter.ai/api/v1/chat/completions";
+
     const res = await fetch(API_URL, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
-        'x-goog-api-key': GEMINI_KEY
+        'Authorization': 'Bearer ' + API_KEY
       },
       body: JSON.stringify({ 
-        contents: [{ role: 'user', parts: [{ text: prompt }] }] 
+        model: MODEL,
+        messages: [{ role: 'user', content: prompt }],
+        stream: true 
       })
     });
     
@@ -87,7 +90,7 @@ async function aiReplyAsync(prompt) {
         if (!payload || payload === '[DONE]') continue;
         try {
           const json = JSON.parse(payload);
-          const txt = json?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
+          const txt = json?.choices?.[0]?.delta?.content || '';
           if (txt) { 
             queue.push(...txt.split('')); 
             if (!isTyping) requestAnimationFrame(typeNextFrame); 
@@ -1785,18 +1788,8 @@ new MutationObserver(()=>{
     </div>
   </div>
 </div>
-<script>
-  window.BotConfig = {
-    botName: "Jenri",
-    avatar: "",
-    widgetIcon: "",
-    chatUrl: "http://localhost:3000/api/public/chat/bot_55b084bc-4204-4aed-9bfc-c9d99a735a99",
-    accentColor: "",
-    greeting: "",
-    theme: ""
-  };
-</script>
-<script src="http://localhost:3000/chatbot-widget.js" async></script>
+
+
 </body>
 <script>
 /* ===== CODEMATE_FINAL_SETTINGS_V1 ===== */
@@ -9138,18 +9131,8 @@ new MutationObserver(()=>{
       addEventListener('message',on);
       tm=setTimeout(()=>end({o:[],err:'код завис или не запустился'}),2500);
       const js=JSON.stringify(String(code)).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
-<script>
-  window.BotConfig = {
-    botName: "Jenri",
-    avatar: "",
-    widgetIcon: "",
-    chatUrl: "http://localhost:3000/api/public/chat/bot_55b084bc-4204-4aed-9bfc-c9d99a735a99",
-    accentColor: "",
-    greeting: "",
-    theme: ""
-  };
-</script>
-<script src="http://localhost:3000/chatbot-widget.js" async></script>
+
+
       f.srcdoc='<body><scr'+'ipt>('+sandboxMain.toString()+')('+js+','+JSON.stringify(id)+');<'+'/scr'+'ipt></body>';
       document.body.appendChild(f);
     });
@@ -10623,18 +10606,8 @@ function paramList(i,e){
       addEventListener('message',on);
       tm=setTimeout(()=>end({o:[],err:'код завис или не запустился',typed:false}),3000);
       const js=JSON.stringify(String(code)).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
-<script>
-  window.BotConfig = {
-    botName: "Jenri",
-    avatar: "",
-    widgetIcon: "",
-    chatUrl: "http://localhost:3000/api/public/chat/bot_55b084bc-4204-4aed-9bfc-c9d99a735a99",
-    accentColor: "",
-    greeting: "",
-    theme: ""
-  };
-</script>
-<script src="http://localhost:3000/chatbot-widget.js" async></script>
+
+
       f.srcdoc='<body><scr'+'ipt>'+tsStrip.toString()+';('+sandboxMain.toString()+')('+js+','+JSON.stringify(id)+');<'+'/scr'+'ipt></body>';
       document.body.appendChild(f);
     });
@@ -15557,18 +15530,8 @@ Console.WriteLine(string.Join(" ", w.Select(s => s.ToUpper())));`,'C# IS FUN','S
       addEventListener('message',on);
       tm=setTimeout(()=>end({o:[],err:'код завис или не запустился'}),2500);
       const code=JSON.stringify(String(js)).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
-<script>
-  window.BotConfig = {
-    botName: "Jenri",
-    avatar: "",
-    widgetIcon: "",
-    chatUrl: "http://localhost:3000/api/public/chat/bot_55b084bc-4204-4aed-9bfc-c9d99a735a99",
-    accentColor: "",
-    greeting: "",
-    theme: ""
-  };
-</script>
-<script src="http://localhost:3000/chatbot-widget.js" async></script>
+
+
       f.srcdoc='<body><scr'+'ipt>('+sandboxMain.toString()+')('+code+','+JSON.stringify(id)+');<'+'/scr'+'ipt></body>';
       document.body.appendChild(f);
     });
