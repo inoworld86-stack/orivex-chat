@@ -1,6 +1,23 @@
 <!DOCTYPE html>
 <html lang="ru">
 <head>
+<div id="maintenanceModal" style="display: flex; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(10, 10, 10, 0.95); z-index: 99999; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #eee; font-family: sans-serif; padding: 20px; box-sizing: border-box;">
+    <div style="font-size: 60px; margin-bottom: 20px;">🤖</div>
+    <h2 id="maintTitle" style="margin: 0 0 10px 0; font-size: 24px; color: #fff;">ИИ временно не работает</h2>
+    <p id="maintText" style="color: #aaa; max-width: 400px; line-height: 1.5; margin-bottom: 20px;">Мы уже работаем над этим! Скоро всё заработает.</p>
+    <button onclick="document.getElementById('maintenanceModal').style.display='none'; localStorage.setItem('maint_shown', '1');" style="background: #00bfa5; color: #000; border: none; padding: 12px 30px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold;">Понятно</button>
+</div>
+<script>
+    if (!navigator.language.startsWith('ru')) {
+        document.getElementById('maintTitle').innerText = 'AI is temporarily down';
+        document.getElementById('maintText').innerText = 'We are working on it! It will be back soon.';
+        document.querySelector('#maintenanceModal button').innerText = 'Got it';
+    }
+    if (localStorage.getItem('maint_shown')) {
+        document.getElementById('maintenanceModal').style.display = 'none';
+    }
+</script>
+
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
 <title>CodeMate OS</title>
