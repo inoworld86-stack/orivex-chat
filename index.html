@@ -55,7 +55,7 @@ async function aiReplyAsync(prompt) {
   try {
     // Твой ключ OpenRouter и модель
     const API_KEY = atob("c2stb3ItdjEtNmY2ZDUxNzdhY2YxYWIwMmE2NmY1ODY1M2QzMjRmZDUxZWVjZjNlMzJhNzFkN2Y2NmNjZmUxOTg0OTgyYjc1MA==");
-    const MODEL = "openrouter/free";
+    const MODEL = "meta-llama/llama-3.3-70b-instruct:free";
     const API_URL = "https://openrouter.ai/api/v1/chat/completions";
 
     const res = await fetch(API_URL, {
@@ -99,8 +99,13 @@ async function aiReplyAsync(prompt) {
       }
     }
   } catch (err) {
-    full += '\n[Ошибка: ' + err.message + ']';
-    bubble.innerHTML = renderMarkdown(full);
+    // Если ошибка связана с API (401, 429, 404) — показываем красивый экран
+    if (err.message.includes('401') || err.message.includes('429') || err.message.includes('404') || err.message.includes('403')) {
+        showAIError();
+    } else {
+        full += '\n[Ошибка: ' + err.message + ']';
+        bubble.innerHTML = renderMarkdown(full);
+    }
   }
 }
 </script>
@@ -471,6 +476,24 @@ body.cm-theme-white .addr {
     color: #17231f !important;
 }
 </style>
+
+
+<script>
+    const userLang = navigator.language || navigator.userLanguage;
+    const isRussian = userLang.startsWith('ru');
+    
+    function showAIError() {
+        const screen = document.getElementById('aiErrorScreen');
+        if (isRussian) {
+            document.getElementById('aiErrorTitle').innerText = "ИИ временно недоступен";
+            document.getElementById('aiErrorText').innerText = "Мы уже чиним проблему. Пожалуйста, зайдите позже или обновите страницу.";
+        } else {
+            document.getElementById('aiErrorTitle').innerText = "AI is temporarily unavailable";
+            document.getElementById('aiErrorText').innerText = "We are fixing the issue. Please come back later or refresh the page.";
+        }
+        screen.classList.add('ai-error-show');
+    }
+</script>
 
 </head>
 <body>
@@ -1790,14 +1813,58 @@ new MutationObserver(()=>{
 </div>
 
 
+
+<!-- Красивый экран ошибки ИИ -->
+<div id="aiErrorScreen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(17, 17, 17, 0.95); z-index: 10000; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #fff; font-family: sans-serif; backdrop-filter: blur(5px);">
+    <div style="font-size: 60px; margin-bottom: 20px;">🤖</div>
+    <h2 id="aiErrorTitle" style="margin: 0 0 10px 0; font-size: 24px;">ИИ временно недоступен</h2>
+    <p id="aiErrorText" style="color: #aaa; max-width: 400px; line-height: 1.5; margin-bottom: 20px;">
+        Мы уже чиним проблему. Пожалуйста, зайдите позже или обновите страницу.
+    </p>
+    <button onclick="location.reload()" style="background: #0088cc; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px;">Обновить</button>
+</div>
+
+<style>
+    .ai-error-show { display: flex !important; }
+</style>
+
 <div id="updateBanner" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 15px 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; gap: 15px; font-family: sans-serif; max-width: 90%; width: 400px;">
     <div style="font-size: 24px;">🚀</div>
     <div style="flex: 1;">
-        <div style="font-weight: bold; margin-bottom: 5px; font-size: 14px;">Доступно обновление!</div>
-        <div style="font-size: 12px; color: #aaa;">Мы добавили: быстрый чат с ИИ, исправили баги и улучшили дизайн.</div>
+        <div id="updateTitle" style="font-weight: bold; margin-bottom: 5px; font-size: 14px;">Доступно обновление!</div>
+        <div id="updateText" style="font-size: 12px; color: #aaa;">Мы добавили: быстрый чат с ИИ, исправили баги и улучшили дизайн.</div>
     </div>
     <button onclick="document.getElementById('updateBanner').style.display='none'" style="background: #0088cc; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: bold;">ОК</button>
 </div>
+<script>
+    // Перевод плашки
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!isRussian) {
+            document.getElementById('updateTitle').innerText = 'Update Available!';
+            document.getElementById('updateText').innerText = 'We added: fast AI chat, bug fixes, and design improvements.';
+        }
+    });
+</script>
+
+
+<div id="maintenanceScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(17, 17, 17, 0.95); z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #fff; font-family: sans-serif; backdrop-filter: blur(5px);">
+    <div style="font-size: 80px; margin-bottom: 20px;">🤖</div>
+    <h2 id="maintenanceTitle" style="margin: 0 0 10px 0; font-size: 28px;">ИИ на техобслуживании</h2>
+    <p id="maintenanceText" style="color: #aaa; max-width: 500px; line-height: 1.5; margin-bottom: 20px; padding: 0 20px;">
+        Мы работаем над тем, чтобы сделать нашего ИИ ещё быстрее и умнее. Пожалуйста, зайдите чуть позже.
+    </p>
+    <button onclick="location.reload()" style="background: #0088cc; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold;">Обновить</button>
+</div>
+
+<script>
+    // Перевод на английский, если язык браузера не русский
+    const userLang = navigator.language || navigator.userLanguage;
+    if (!userLang.startsWith('ru')) {
+        document.getElementById('maintenanceTitle').innerText = 'AI is under maintenance';
+        document.getElementById('maintenanceText').innerText = 'We are working to make our AI faster and smarter. Please come back later.';
+    }
+</script>
+
 </body>
 <script>
 /* ===== CODEMATE_FINAL_SETTINGS_V1 ===== */
@@ -9141,15 +9208,59 @@ new MutationObserver(()=>{
       const js=JSON.stringify(String(code)).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
 
 
+
+<!-- Красивый экран ошибки ИИ -->
+<div id="aiErrorScreen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(17, 17, 17, 0.95); z-index: 10000; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #fff; font-family: sans-serif; backdrop-filter: blur(5px);">
+    <div style="font-size: 60px; margin-bottom: 20px;">🤖</div>
+    <h2 id="aiErrorTitle" style="margin: 0 0 10px 0; font-size: 24px;">ИИ временно недоступен</h2>
+    <p id="aiErrorText" style="color: #aaa; max-width: 400px; line-height: 1.5; margin-bottom: 20px;">
+        Мы уже чиним проблему. Пожалуйста, зайдите позже или обновите страницу.
+    </p>
+    <button onclick="location.reload()" style="background: #0088cc; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px;">Обновить</button>
+</div>
+
+<style>
+    .ai-error-show { display: flex !important; }
+</style>
+      f.srcdoc='<body><scr'+'ipt>('+sandboxMain.toString()+')('+js+','+JSON.stringify(id)+');<'+'/scr'+'ipt>
 <div id="updateBanner" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 15px 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; gap: 15px; font-family: sans-serif; max-width: 90%; width: 400px;">
     <div style="font-size: 24px;">🚀</div>
     <div style="flex: 1;">
-        <div style="font-weight: bold; margin-bottom: 5px; font-size: 14px;">Доступно обновление!</div>
-        <div style="font-size: 12px; color: #aaa;">Мы добавили: быстрый чат с ИИ, исправили баги и улучшили дизайн.</div>
+        <div id="updateTitle" style="font-weight: bold; margin-bottom: 5px; font-size: 14px;">Доступно обновление!</div>
+        <div id="updateText" style="font-size: 12px; color: #aaa;">Мы добавили: быстрый чат с ИИ, исправили баги и улучшили дизайн.</div>
     </div>
     <button onclick="document.getElementById('updateBanner').style.display='none'" style="background: #0088cc; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: bold;">ОК</button>
 </div>
-      f.srcdoc='<body><scr'+'ipt>('+sandboxMain.toString()+')('+js+','+JSON.stringify(id)+');<'+'/scr'+'ipt></body>';
+<script>
+    // Перевод плашки
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!isRussian) {
+            document.getElementById('updateTitle').innerText = 'Update Available!';
+            document.getElementById('updateText').innerText = 'We added: fast AI chat, bug fixes, and design improvements.';
+        }
+    });
+</script>
+
+
+<div id="maintenanceScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(17, 17, 17, 0.95); z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #fff; font-family: sans-serif; backdrop-filter: blur(5px);">
+    <div style="font-size: 80px; margin-bottom: 20px;">🤖</div>
+    <h2 id="maintenanceTitle" style="margin: 0 0 10px 0; font-size: 28px;">ИИ на техобслуживании</h2>
+    <p id="maintenanceText" style="color: #aaa; max-width: 500px; line-height: 1.5; margin-bottom: 20px; padding: 0 20px;">
+        Мы работаем над тем, чтобы сделать нашего ИИ ещё быстрее и умнее. Пожалуйста, зайдите чуть позже.
+    </p>
+    <button onclick="location.reload()" style="background: #0088cc; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold;">Обновить</button>
+</div>
+
+<script>
+    // Перевод на английский, если язык браузера не русский
+    const userLang = navigator.language || navigator.userLanguage;
+    if (!userLang.startsWith('ru')) {
+        document.getElementById('maintenanceTitle').innerText = 'AI is under maintenance';
+        document.getElementById('maintenanceText').innerText = 'We are working to make our AI faster and smarter. Please come back later.';
+    }
+</script>
+
+</body>';
       document.body.appendChild(f);
     });
   }
@@ -10624,15 +10735,59 @@ function paramList(i,e){
       const js=JSON.stringify(String(code)).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
 
 
+
+<!-- Красивый экран ошибки ИИ -->
+<div id="aiErrorScreen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(17, 17, 17, 0.95); z-index: 10000; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #fff; font-family: sans-serif; backdrop-filter: blur(5px);">
+    <div style="font-size: 60px; margin-bottom: 20px;">🤖</div>
+    <h2 id="aiErrorTitle" style="margin: 0 0 10px 0; font-size: 24px;">ИИ временно недоступен</h2>
+    <p id="aiErrorText" style="color: #aaa; max-width: 400px; line-height: 1.5; margin-bottom: 20px;">
+        Мы уже чиним проблему. Пожалуйста, зайдите позже или обновите страницу.
+    </p>
+    <button onclick="location.reload()" style="background: #0088cc; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px;">Обновить</button>
+</div>
+
+<style>
+    .ai-error-show { display: flex !important; }
+</style>
+      f.srcdoc='<body><scr'+'ipt>'+tsStrip.toString()+';('+sandboxMain.toString()+')('+js+','+JSON.stringify(id)+');<'+'/scr'+'ipt>
 <div id="updateBanner" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 15px 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; gap: 15px; font-family: sans-serif; max-width: 90%; width: 400px;">
     <div style="font-size: 24px;">🚀</div>
     <div style="flex: 1;">
-        <div style="font-weight: bold; margin-bottom: 5px; font-size: 14px;">Доступно обновление!</div>
-        <div style="font-size: 12px; color: #aaa;">Мы добавили: быстрый чат с ИИ, исправили баги и улучшили дизайн.</div>
+        <div id="updateTitle" style="font-weight: bold; margin-bottom: 5px; font-size: 14px;">Доступно обновление!</div>
+        <div id="updateText" style="font-size: 12px; color: #aaa;">Мы добавили: быстрый чат с ИИ, исправили баги и улучшили дизайн.</div>
     </div>
     <button onclick="document.getElementById('updateBanner').style.display='none'" style="background: #0088cc; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: bold;">ОК</button>
 </div>
-      f.srcdoc='<body><scr'+'ipt>'+tsStrip.toString()+';('+sandboxMain.toString()+')('+js+','+JSON.stringify(id)+');<'+'/scr'+'ipt></body>';
+<script>
+    // Перевод плашки
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!isRussian) {
+            document.getElementById('updateTitle').innerText = 'Update Available!';
+            document.getElementById('updateText').innerText = 'We added: fast AI chat, bug fixes, and design improvements.';
+        }
+    });
+</script>
+
+
+<div id="maintenanceScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(17, 17, 17, 0.95); z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #fff; font-family: sans-serif; backdrop-filter: blur(5px);">
+    <div style="font-size: 80px; margin-bottom: 20px;">🤖</div>
+    <h2 id="maintenanceTitle" style="margin: 0 0 10px 0; font-size: 28px;">ИИ на техобслуживании</h2>
+    <p id="maintenanceText" style="color: #aaa; max-width: 500px; line-height: 1.5; margin-bottom: 20px; padding: 0 20px;">
+        Мы работаем над тем, чтобы сделать нашего ИИ ещё быстрее и умнее. Пожалуйста, зайдите чуть позже.
+    </p>
+    <button onclick="location.reload()" style="background: #0088cc; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold;">Обновить</button>
+</div>
+
+<script>
+    // Перевод на английский, если язык браузера не русский
+    const userLang = navigator.language || navigator.userLanguage;
+    if (!userLang.startsWith('ru')) {
+        document.getElementById('maintenanceTitle').innerText = 'AI is under maintenance';
+        document.getElementById('maintenanceText').innerText = 'We are working to make our AI faster and smarter. Please come back later.';
+    }
+</script>
+
+</body>';
       document.body.appendChild(f);
     });
   }
@@ -15556,15 +15711,59 @@ Console.WriteLine(string.Join(" ", w.Select(s => s.ToUpper())));`,'C# IS FUN','S
       const code=JSON.stringify(String(js)).replace(/</g,'\\u003c').replace(/\u2028/g,'\\u2028').replace(/\u2029/g,'\\u2029');
 
 
+
+<!-- Красивый экран ошибки ИИ -->
+<div id="aiErrorScreen" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(17, 17, 17, 0.95); z-index: 10000; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #fff; font-family: sans-serif; backdrop-filter: blur(5px);">
+    <div style="font-size: 60px; margin-bottom: 20px;">🤖</div>
+    <h2 id="aiErrorTitle" style="margin: 0 0 10px 0; font-size: 24px;">ИИ временно недоступен</h2>
+    <p id="aiErrorText" style="color: #aaa; max-width: 400px; line-height: 1.5; margin-bottom: 20px;">
+        Мы уже чиним проблему. Пожалуйста, зайдите позже или обновите страницу.
+    </p>
+    <button onclick="location.reload()" style="background: #0088cc; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; font-size: 16px;">Обновить</button>
+</div>
+
+<style>
+    .ai-error-show { display: flex !important; }
+</style>
+      f.srcdoc='<body><scr'+'ipt>('+sandboxMain.toString()+')('+code+','+JSON.stringify(id)+');<'+'/scr'+'ipt>
 <div id="updateBanner" style="position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%); background: #1a1a1a; border: 1px solid #333; color: #fff; padding: 15px 20px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.5); z-index: 9999; display: flex; align-items: center; gap: 15px; font-family: sans-serif; max-width: 90%; width: 400px;">
     <div style="font-size: 24px;">🚀</div>
     <div style="flex: 1;">
-        <div style="font-weight: bold; margin-bottom: 5px; font-size: 14px;">Доступно обновление!</div>
-        <div style="font-size: 12px; color: #aaa;">Мы добавили: быстрый чат с ИИ, исправили баги и улучшили дизайн.</div>
+        <div id="updateTitle" style="font-weight: bold; margin-bottom: 5px; font-size: 14px;">Доступно обновление!</div>
+        <div id="updateText" style="font-size: 12px; color: #aaa;">Мы добавили: быстрый чат с ИИ, исправили баги и улучшили дизайн.</div>
     </div>
     <button onclick="document.getElementById('updateBanner').style.display='none'" style="background: #0088cc; border: none; color: white; padding: 5px 10px; border-radius: 5px; cursor: pointer; font-weight: bold;">ОК</button>
 </div>
-      f.srcdoc='<body><scr'+'ipt>('+sandboxMain.toString()+')('+code+','+JSON.stringify(id)+');<'+'/scr'+'ipt></body>';
+<script>
+    // Перевод плашки
+    document.addEventListener('DOMContentLoaded', () => {
+        if (!isRussian) {
+            document.getElementById('updateTitle').innerText = 'Update Available!';
+            document.getElementById('updateText').innerText = 'We added: fast AI chat, bug fixes, and design improvements.';
+        }
+    });
+</script>
+
+
+<div id="maintenanceScreen" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(17, 17, 17, 0.95); z-index: 10000; display: flex; flex-direction: column; justify-content: center; align-items: center; text-align: center; color: #fff; font-family: sans-serif; backdrop-filter: blur(5px);">
+    <div style="font-size: 80px; margin-bottom: 20px;">🤖</div>
+    <h2 id="maintenanceTitle" style="margin: 0 0 10px 0; font-size: 28px;">ИИ на техобслуживании</h2>
+    <p id="maintenanceText" style="color: #aaa; max-width: 500px; line-height: 1.5; margin-bottom: 20px; padding: 0 20px;">
+        Мы работаем над тем, чтобы сделать нашего ИИ ещё быстрее и умнее. Пожалуйста, зайдите чуть позже.
+    </p>
+    <button onclick="location.reload()" style="background: #0088cc; color: white; border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: bold;">Обновить</button>
+</div>
+
+<script>
+    // Перевод на английский, если язык браузера не русский
+    const userLang = navigator.language || navigator.userLanguage;
+    if (!userLang.startsWith('ru')) {
+        document.getElementById('maintenanceTitle').innerText = 'AI is under maintenance';
+        document.getElementById('maintenanceText').innerText = 'We are working to make our AI faster and smarter. Please come back later.';
+    }
+</script>
+
+</body>';
       document.body.appendChild(f);
     });
   }
